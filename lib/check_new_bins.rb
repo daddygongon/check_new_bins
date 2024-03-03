@@ -3,6 +3,7 @@ require 'YAML'
 require 'thor'
 require 'date'
 require 'command_line/global'
+require 'fileutils'
 require_relative "check_new_bins/version"
 
 module CheckNewBins
@@ -35,7 +36,7 @@ module CheckNewBins
     desc "list", "list bin dirs"
     def list(*args)
       p target_file = args[0] || ''
-      
+      target_files = []
       p dirs = YAML.load(File.read($conf_file))
       data = {}
       p date = Date.today
@@ -46,9 +47,25 @@ module CheckNewBins
           p bin_dir
           res = command_line "ls -lat #{bin_dir}"
           res.stdout.split("\n").each do |line|
-            puts line if line.include?(target_file)
+            if line.include?(target_file)
+              puts line
+              file = line.split(' ')[-1]
+              target_files << File.join(bin_dir, file)
+            end
           end
         end
+      end
+      target_files.each_with_index do |file, i |
+        p [i, file]
+      end
+
+      copy_files = args[1] || nil
+      unless copy_files==nil
+        from, to = copy_files.split(' ')
+        from = target_files[from.to_i]
+        to = target_files[to.to_i]
+        #        FileUtils::DryRun.cp(from, to, verbose: true)
+        FileUtils.cp(from, to, verbose: true)
       end
     end
   end
